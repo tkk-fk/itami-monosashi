@@ -1,1 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>いたみの ものさし｜特別支援教材開発研究所</title>
+<meta name="description" content="顔をタップして、いまの痛さを0〜10で伝えるアプリ。言葉で説明するのが難しい子どもも、表情と数字で痛みを伝えられます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overscroll-behavior:none}
+  body{
+    font-family:"Zen Maru Gothic","BIZ UDPGothic",sans-serif;
+    background:#fdfaf4;color:#3a3a3a;
+    height:100vh;height:100dvh;
+    display:flex;flex-direction:column;
+    touch-action:manipulation;user-select:none;-webkit-user-select:none;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 16px;flex:0 0 auto;
+  }
+  h1{font-size:clamp(20px,3.2vw,30px);font-weight:900;letter-spacing:.08em}
+  .icon-btn{
+    min-width:48px;min-height:48px;border:none;border-radius:14px;
+    background:#efe8da;color:#555;font:inherit;font-size:15px;font-weight:700;
+    padding:0 14px;cursor:pointer;
+  }
+  .icon-btn:active{transform:scale(.96)}
 
+  main{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;padding:0 12px}
+
+  /* 選んだ顔の大きな表示 */
+  .stage{
+    flex:1 1 auto;min-height:0;
+    display:flex;align-items:center;justify-content:center;gap:4vmin;
+    padding:8px;
+  }
+  .big-face{width:min(34vh,42vw);height:min(34vh,42vw);flex:0 0 auto}
+  .big-face svg{width:100%;height:100%;display:block}
+  .big-info{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+  .big-num{font-size:min(16vh,20vw);font-weight:900;line-height:1}
+  .big-label{font-size:clamp(20px,4.2vmin,40px);font-weight:700;line-height:1.3}
+  .prompt{font-size:clamp(22px,4.6vmin,40px);font-weight:700;text-align:center;line-height:1.6;color:#666}
+
+  /* ものさし */
+  .ruler-wrap{flex:0 0 auto;padding:6px 0 10px}
+  .scale{
+    display:flex;justify-content:center;gap:6px;flex-wrap:nowrap;
+    padding:0 4px;
+  }
+  .face-btn{
+    flex:1 1 0;max-width:120px;min-width:44px;
+    border:4px solid transparent;border-radius:18px;
+    background:#fff;padding:6px 2px 4px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    box-shadow:0 2px 0 #e3dccd;font:inherit;color:inherit;
+    transition:transform .12s;
+  }
+  .face-btn svg{width:100%;height:auto;max-width:96px;display:block}
+  .face-btn .n{font-size:clamp(16px,2.6vw,26px);font-weight:900;line-height:1.1}
+  .face-btn.on{border-color:#3a3a3a;transform:translateY(-6px)}
+  .bar{
+    height:14px;border-radius:7px;margin:8px 8px 0;
+    background:linear-gradient(90deg,hsl(130,60%,62%),hsl(65,75%,60%),hsl(30,85%,62%),hsl(0,75%,62%));
+  }
+  .bar-ends{display:flex;justify-content:space-between;margin:4px 10px 0;font-size:clamp(13px,2vw,18px);font-weight:700;color:#777}
+  .hide-num .face-btn .n,.hide-num .big-num{display:none}
+  .hide-word .big-label{display:none}
+
+  /* きろく */
+  .log{
+    flex:0 0 auto;display:flex;align-items:center;gap:10px;
+    padding:8px 12px 12px;border-top:2px dashed #e6dfd0;
+  }
+  .log-btn{
+    min-height:52px;border:none;border-radius:16px;padding:0 18px;
+    background:#5b8def;color:#fff;font:inherit;font-size:18px;font-weight:900;cursor:pointer;flex:0 0 auto;
+  }
+  .log-btn:disabled{background:#c9cfdb}
+  .log-list{flex:1 1 auto;display:flex;gap:8px;overflow-x:auto;padding:2px 0;scrollbar-width:thin}
+  .chip{
+    flex:0 0 auto;display:flex;flex-direction:column;align-items:center;
+    background:#fff;border-radius:12px;padding:4px 8px;box-shadow:0 1px 0 #e3dccd;min-width:58px;
+  }
+  .chip svg{width:34px;height:34px}
+  .chip .cn{font-weight:900;font-size:16px;line-height:1.1}
+  .chip .ct{font-size:12px;color:#888}
+  .log-empty{color:#aaa;font-size:15px}
+
+  /* せってい */
+  .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:10}
+  .sheet-bg.open{display:flex}
+  .sheet{background:#fff;border-radius:22px;padding:22px;width:min(92vw,440px);max-height:90dvh;overflow:auto}
+  .sheet h2{font-size:22px;margin-bottom:14px}
+  .row{margin-bottom:16px}
+  .row .lbl{font-weight:700;margin-bottom:6px}
+  .seg{display:flex;gap:8px}
+  .seg button{
+    flex:1;min-height:48px;border:3px solid #e3dccd;border-radius:14px;background:#fff;
+    font:inherit;font-size:17px;font-weight:700;cursor:pointer;color:#555;
+  }
+  .seg button.on{border-color:#5b8def;background:#eaf1ff;color:#2a5bc4}
+  .sheet .close{width:100%;margin-top:4px;background:#3a3a3a;color:#fff}
+  .note{font-size:13px;color:#777;line-height:1.7;margin-top:12px}
+
+  footer{flex:0 0 auto;text-align:center;font-size:11px;color:#999;padding:0 8px 6px}
+
+  /* 縦長画面 */
+  @media (max-aspect-ratio:4/5){
+    .stage{flex-direction:column;gap:2vh}
+    .big-face{width:min(30vh,62vw);height:min(30vh,62vw)}
+    .big-info{align-items:center;text-align:center}
+    .big-num{font-size:min(10vh,18vw)}
+    .scale.s11{flex-wrap:wrap;gap:6px}
+    .scale.s11 .face-btn{flex:0 0 calc((100% - 30px)/6)}
+    .s11 ~ .bar,.s11 ~ .bar-ends{display:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>いたみの ものさし</h1>
+  <button class="icon-btn" id="openSet" aria-label="せってい">⚙ せってい</button>
+</header>
+
+<main id="main">
+  <section class="stage" id="stage" aria-live="polite"></section>
+  <div class="ruler-wrap">
+    <div class="scale" id="scale"></div>
+    <div class="bar"></div>
+    <div class="bar-ends"><span>いたくない</span><span>いちばん いたい</span></div>
+  </div>
+</main>
+
+<section class="log">
+  <button class="log-btn" id="logBtn" disabled>きろく</button>
+  <div class="log-list" id="logList"></div>
+</section>
+
+<footer>いたみが つよいとき・つづくときは、おとなや びょういんに つたえよう ／ 特別支援教材開発研究所</footer>
+
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet" role="dialog" aria-label="せってい">
+    <h2>せってい</h2>
+    <div class="row">
+      <div class="lbl">かおの かず</div>
+      <div class="seg" data-key="steps">
+        <button data-v="6">6こ</button>
+        <button data-v="11">11こ（0〜10）</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lbl">すうじ</div>
+      <div class="seg" data-key="num">
+        <button data-v="1">だす</button>
+        <button data-v="0">かくす</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lbl">ことば</div>
+      <div class="seg" data-key="word">
+        <button data-v="1">だす</button>
+        <button data-v="0">かくす</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="lbl">きろく</div>
+      <div class="seg">
+        <button id="clearLog">ぜんぶ けす</button>
+      </div>
+    </div>
+    <button class="icon-btn close" id="closeSet">とじる</button>
+    <p class="note">0は「いたくない」、10は「かんがえられる いちばんの いたさ」です。いたさが あるか ないかより、まえと くらべて 上がったか 下がったかを 見るのに つかえます。このアプリは きもちを つたえる ための どうぐで、しんだんは できません。</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---- 純粋関数 ----
+  function clampLevel(v){
+    v = Number(v);
+    if(!isFinite(v)) return 0;
+    return Math.max(0, Math.min(10, Math.round(v)));
+  }
+  function levelsFor(steps){
+    return steps === 6 ? [0,2,4,6,8,10] : [0,1,2,3,4,5,6,7,8,9,10];
+  }
+  function labelFor(level){
+    level = clampLevel(level);
+    if(level === 0) return 'いたくない';
+    if(level <= 2) return 'ちょっと いたい';
+    if(level <= 4) return 'すこし いたい';
+    if(level <= 6) return 'いたい';
+    if(level <= 8) return 'とても いたい';
+    return 'がまん できないくらい いたい';
+  }
+  function faceColor(level){
+    var t = clampLevel(level) / 10;
+    var hue = Math.round(130 - 130 * t);
+    var sat = Math.round(60 + 20 * t);
+    var light = Math.round(74 - 8 * t);
+    return 'hsl(' + hue + ',' + sat + '%,' + light + '%)';
+  }
+  function r1(x){ return Math.round(x * 10) / 10; }
+
+  // オリジナルの顔イラスト（0〜10で表情がなめらかに変わる）
+  function faceSVG(level){
+    level = clampLevel(level);
+    var t = level / 10;
+    var ink = '#3a3a3a';
+    var s = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">';
+    s += '<circle cx="50" cy="50" r="45" fill="' + faceColor(level) + '" stroke="' + ink + '" stroke-width="3"/>';
+
+    // まゆ：3から、内側が上がる「こまり まゆ」
+    if(level >= 3){
+      var lift = r1(4 + 8 * t);
+      s += '<path d="M24 ' + 34 + ' L41 ' + r1(34 - lift) + '" stroke="' + ink + '" stroke-width="3.5" stroke-linecap="round" fill="none"/>';
+      s += '<path d="M76 ' + 34 + ' L59 ' + r1(34 - lift) + '" stroke="' + ink + '" stroke-width="3.5" stroke-linecap="round" fill="none"/>';
+    }
+
+    // め
+    if(level <= 1){
+      // にっこり め
+      s += '<path d="M29 46 Q35 39 41 46" stroke="' + ink + '" stroke-width="3.5" stroke-linecap="round" fill="none"/>';
+      s += '<path d="M59 46 Q65 39 71 46" stroke="' + ink + '" stroke-width="3.5" stroke-linecap="round" fill="none"/>';
+    } else if(level <= 7){
+      var ry = r1(6 - 3.2 * (t - 0.2) / 0.5);
+      s += '<ellipse cx="35" cy="45" rx="4.5" ry="' + ry + '" fill="' + ink + '"/>';
+      s += '<ellipse cx="65" cy="45" rx="4.5" ry="' + ry + '" fill="' + ink + '"/>';
+    } else {
+      // ぎゅっと とじた め
+      s += '<path d="M29 40 L40 45 L29 50" stroke="' + ink + '" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+      s += '<path d="M71 40 L60 45 L71 50" stroke="' + ink + '" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>';
+    }
+
+    // ほっぺ（いたくないとき）
+    if(level <= 1){
+      s += '<circle cx="24" cy="60" r="6" fill="#ff9aa8" opacity=".6"/>';
+      s += '<circle cx="76" cy="60" r="6" fill="#ff9aa8" opacity=".6"/>';
+    }
+
+    // くち：笑顔 → まっすぐ → への字 → ひらいた くち
+    if(level <= 8){
+      var cy = r1(66 + 24 * (1 - 2 * t) * 0.75);
+      var w = r1(15 - 3 * t);
+      s += '<path d="M' + r1(50 - w) + ' 68 Q50 ' + cy + ' ' + r1(50 + w) + ' 68" stroke="' + ink + '" stroke-width="4" stroke-linecap="round" fill="none"/>';
+    } else {
+      var h = level === 9 ? 8 : 11;
+      s += '<path d="M36 ' + (76) + ' Q50 ' + (76 - h * 2) + ' 64 76 Z" fill="' + ink + '" stroke="' + ink + '" stroke-width="3" stroke-linejoin="round"/>';
+    }
+
+    // あせ（6から）
+    if(level >= 6){
+      s += '<path d="M82 22 Q77 31 82 35 Q87 31 82 22 Z" fill="#7cc4f0" stroke="' + ink + '" stroke-width="1.5"/>';
+    }
+    s += '</svg>';
+    return s;
+  }
+
+  function fmtTime(ms){
+    var d = new Date(ms);
+    var h = d.getHours(), m = d.getMinutes();
+    return h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  function sanitizeLog(arr){
+    if(!Array.isArray(arr)) return [];
+    var out = [];
+    for(var i = 0; i < arr.length; i++){
+      var e = arr[i];
+      if(e && typeof e === 'object' && isFinite(e.t) && isFinite(e.v)){
+        out.push({ v: clampLevel(e.v), t: Number(e.t) });
+      }
+    }
+    return out.slice(-50);
+  }
+
+  // ---- 状態 ----
+  var KEY = 'tkk-itami-monosashi';
+  var state = { steps: 6, num: 1, word: 1, sel: null, log: [] };
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(raw){
+        var o = JSON.parse(raw);
+        if(o.steps === 6 || o.steps === 11) state.steps = o.steps;
+        if(o.num === 0 || o.num === 1) state.num = o.num;
+        if(o.word === 0 || o.word === 1) state.word = o.word;
+        state.log = sanitizeLog(o.log);
+      }
+    }catch(e){}
+  }
+  function save(){
+    try{
+      localStorage.setItem(KEY, JSON.stringify({ steps: state.steps, num: state.num, word: state.word, log: state.log }));
+    }catch(e){}
+  }
+
+  // ---- 描画 ----
+  var $ = function(id){ return document.getElementById(id); };
+
+  function renderScale(){
+    var box = $('scale');
+    box.className = 'scale s' + state.steps;
+    var html = '';
+    levelsFor(state.steps).forEach(function(lv){
+      html += '<button class="face-btn' + (state.sel === lv ? ' on' : '') + '" data-lv="' + lv + '" aria-label="' + lv + ' ' + labelFor(lv) + '">' +
+              faceSVG(lv) + '<span class="n">' + lv + '</span></button>';
+    });
+    box.innerHTML = html;
+  }
+  function renderStage(){
+    var st = $('stage');
+    if(state.sel === null){
+      st.innerHTML = '<p class="prompt">いまの いたさは<br>どの かおかな？</p>';
+      return;
+    }
+    st.innerHTML = '<div class="big-face">' + faceSVG(state.sel) + '</div>' +
+      '<div class="big-info"><div class="big-num">' + state.sel + '</div>' +
+      '<div class="big-label">' + labelFor(state.sel) + '</div></div>';
+  }
+  function renderLog(){
+    var list = $('logList');
+    if(!state.log.length){
+      list.innerHTML = '<span class="log-empty">えらんで「きろく」を おすと、ここに ならぶよ</span>';
+    } else {
+      var html = '';
+      state.log.forEach(function(e){
+        html += '<div class="chip">' + faceSVG(e.v) + '<span class="cn">' + e.v + '</span><span class="ct">' + fmtTime(e.t) + '</span></div>';
+      });
+      list.innerHTML = html;
+      list.scrollLeft = list.scrollWidth;
+    }
+    $('logBtn').disabled = state.sel === null;
+  }
+  function renderSettings(){
+    document.querySelectorAll('.seg[data-key]').forEach(function(seg){
+      var k = seg.getAttribute('data-key');
+      seg.querySelectorAll('button').forEach(function(b){
+        b.classList.toggle('on', Number(b.getAttribute('data-v')) === state[k]);
+      });
+    });
+    var m = $('main');
+    m.classList.toggle('hide-num', !state.num);
+    m.classList.toggle('hide-word', !state.word);
+  }
+  function renderAll(){ renderScale(); renderStage(); renderLog(); renderSettings(); }
+
+  // ---- 操作 ----
+  $('scale').addEventListener('click', function(ev){
+    var b = ev.target.closest('.face-btn');
+    if(!b) return;
+    state.sel = clampLevel(b.getAttribute('data-lv'));
+    renderScale(); renderStage(); renderLog();
+  });
+  $('logBtn').addEventListener('click', function(){
+    if(state.sel === null) return;
+    state.log.push({ v: state.sel, t: Date.now() });
+    state.log = sanitizeLog(state.log);
+    save(); renderLog();
+  });
+  $('openSet').addEventListener('click', function(){ $('sheetBg').classList.add('open'); });
+  $('closeSet').addEventListener('click', function(){ $('sheetBg').classList.remove('open'); });
+  $('sheetBg').addEventListener('click', function(ev){ if(ev.target === this) this.classList.remove('open'); });
+  document.querySelectorAll('.seg[data-key]').forEach(function(seg){
+    seg.addEventListener('click', function(ev){
+      var b = ev.target.closest('button');
+      if(!b) return;
+      var k = seg.getAttribute('data-key');
+      state[k] = Number(b.getAttribute('data-v'));
+      if(k === 'steps' && state.sel !== null && levelsFor(state.steps).indexOf(state.sel) < 0){
+        state.sel = null;
+      }
+      save(); renderAll();
+    });
+  });
+  $('clearLog').addEventListener('click', function(){
+    state.log = [];
+    save(); renderLog();
+  });
+
+  // iOS ピンチズーム抑制
+  document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+
+  // テスト用に公開
+  window.__itami = { clampLevel: clampLevel, levelsFor: levelsFor, labelFor: labelFor, faceSVG: faceSVG, faceColor: faceColor, sanitizeLog: sanitizeLog, state: state };
+
+  load();
+  renderAll();
+})();
+</script>
+</body>
+</html>
